@@ -7,8 +7,6 @@ on:
       [closed]
   # Also on push to any branches
   push:
-    branches:
-      - *
 
 # Reference for this file:
 # https://github.com/rhodrin/ci_mpm/blob/master/.github/workflows/flake8.yml
