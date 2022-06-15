@@ -1,0 +1,35 @@
+name: 'PEP-8 Linter'
+
+on:
+  # Trigger workflow when a PR is closed on main
+  pull_request:
+    types:
+      [closed]
+  # Also on push to any branches
+  push:
+    branches:
+      - *
+
+# Reference for this file:
+# https://github.com/rhodrin/ci_mpm/blob/master/.github/workflows/flake8.yml
+jobs:
+  flake8:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install flake8
+    
+    - name: Lint with flake8
+      run: |
+        flake8 .
