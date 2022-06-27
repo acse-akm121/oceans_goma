@@ -190,10 +190,12 @@ def main():
     for i in range(axs.shape[1]):
         for j in range(axs.shape[0]):
             fig.colorbar(tcs[i][j], ax=axs[j, i])
+    plt.suptitle("Unsmoothed Monitor Function")
     fig.savefig("fig2_unsmooth.jpg")
     smoothed_fns = []
     P = mesh_seq.time_partition
     N = 40  # Constant from paper, but see the later comment
+    num_smooth = 4
     for i in range(len(funcs)):
         fns = []
         function_space = funcs[i][0].function_space()
@@ -212,10 +214,12 @@ def main():
         for j in range(len(funcs[i])):
             # this should be the same as while t < t_end - 1e-5:
             f_bound.assign(funcs[i][j])
-            solve(F == 0, f_smooth)
+            for k in range(num_smooth):
+                # Potentially have a k-loop here and smooth N times?
+                solve(F == 0, f_smooth)
+                t += dt
+                f_bound.assign(f_smooth)
             fns.append(Function(function_space, val=f_smooth.dat.data))
-            t += dt
-
         smoothed_fns.append(fns)
 
     print(len(smoothed_fns), len(smoothed_fns[0]), type(smoothed_fns[0][0]))
@@ -226,6 +230,7 @@ def main():
     for i in range(axs.shape[1]):
         for j in range(axs.shape[0]):
             fig.colorbar(tcs[i][j], ax=axs[j, i])
+    plt.suptitle("Smoothed Monitor Function")
     fig.savefig("fig3_smooth.jpg")
 
 
