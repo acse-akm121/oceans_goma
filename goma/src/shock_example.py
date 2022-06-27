@@ -4,6 +4,7 @@ A simple example file to set up a problem and QOI.
 from firedrake import *
 from pyroteus import *
 from pyroteus_adjoint import *
+import matplotlib.pyplot as plt
 
 
 NU = 0.0001
@@ -19,8 +20,8 @@ def get_form(mesh_seq):
         v = TestFunction(u.function_space())
         F = (
             inner((u - u_) / dt, v) * dx
-            + inner(dot(u, nabla_grad(u)), v) * dx  # noqa: W503
-            + nu * inner(grad(u), grad(v)) * dx  # noqa: W503
+            + inner(dot(u, nabla_grad(u)), v) * dx
+            + nu * inner(grad(u), grad(v)) * dx
         )
         return F
 
@@ -53,7 +54,7 @@ def get_solver(mesh_seq):
 
 
 def get_function_spaces(mesh):
-    return {"u": VectorFunctionSpace(mesh, "CG", 2)}
+    return {"u": VectorFunctionSpace(mesh, "CG", 1), "f": FunctionSpace(mesh, "DG", 0)}
 
 
 def get_initial_condition(mesh_seq):
@@ -66,9 +67,49 @@ def get_initial_condition(mesh_seq):
 def get_qoi(mesh_seq, solutions, i):
     def end_time_qoi():
         u = solutions["u"]
+        # ds(2) is dy (ds, subdomain 2)
         return inner(u, u) * ds(2)
 
     return end_time_qoi
+
+
+def plot_indicator_snapshots2(indicators, time_partition, **kwargs):
+    """
+    Plot a sequence of snapshots associated with
+    ``indicators`` and :class:`TimePartition`
+    ``time_partition``. This modification plots the log of errors.
+
+    Any keyword arguments are passed to ``tricontourf``.
+
+    :arg indicators: list of list of indicators,
+        indexed by mesh sequence index, then timestep
+    :arg time_partition: the :class:`TimePartition`
+        object used to solve the problem
+    """
+    P = time_partition
+    rows = P.exports_per_subinterval[0] - 1
+    cols = P.num_subintervals
+    steady = rows == cols == 1
+    figsize = kwargs.pop("figsize", (6 * cols, 24 // cols))
+    fig, axes = plt.subplots(rows, cols, sharex="col", figsize=figsize)
+    tcs = []
+    for i, indi_step in enumerate(indicators):
+        ax = axes if steady else axes[0] if cols == 1 else axes[0, i]
+        ax.set_title(f"Mesh[{i}]")
+        tc = []
+        for j, indi in enumerate(indi_step):
+            t_indi = Function(indi.function_space(), val=np.log(indi.dat.data))
+            ax = axes if steady else axes[j] if cols == 1 else axes[j, i]
+            tc.append(tricontourf(t_indi, axes=ax, **kwargs))
+            if not steady:
+                time = (
+                    i * P.end_time / cols
+                    + j * P.timesteps_per_export[i] * P.timesteps[i]
+                )
+                ax.annotate(f"t={time:.2f}", (0.05, 0.05), color="white")
+        tcs.append(tc)
+    plt.tight_layout()
+    return fig, axes, tcs
 
 
 def main():
@@ -95,33 +136,97 @@ def main():
         get_qoi=get_qoi,
         qoi_type="end_time",
     )
-    solutions = mesh_seq.solve_adjoint()
-    # print("QOI: {}".format(mesh_seq.get_qoi()))
-    fig, axes, tcs = plot_snapshots(
-        solutions,
-        time_partition,
-        "u",
-        "adjoint",
-        levels=np.linspace(0, 0.8, 9),
-    )
-    fig.savefig("burgers2.jpg")
     solutions, indicators = mesh_seq.indicate_errors(
-        enrichment_kwargs={"enrichment_method": "h"}
+        enrichment_kwargs={"enrichment_method": "p"}
     )
-    print(indicators.shape)
-    for field, sols in solutions.items():
-        fwd_outfile = File(f"test_burgers2/{field}_forward.pvd")
-        adj_outfile = File(f"test_burgers2/{field}_adjoint.pvd")
-        for i, mesh in enumerate(mesh_seq):
-            for sol in sols["forward"][i]:
-                fwd_outfile.write(sol)
-            for sol in sols["adjoint"][i]:
-                adj_outfile.write(sol)
 
-    fig, axes, tcs = plot_indicator_snapshots(
-        indicators, time_partition, levels=50
-    )  # noqa: E501
-    fig.savefig("ee-adj.jpg")
+    vmax, vmin = -np.inf, np.inf
+    for i, mesh_i in enumerate(indicators):
+        for j, e_t in enumerate(indicators[i]):
+            vmax = np.max((vmax, np.max(np.log(np.abs(e_t.dat.data)))))
+            vmin = np.min((vmin, np.min(np.log(np.abs(e_t.dat.data)))))
+
+    figsize = (
+        2 * len(solutions["u"]["forward"][0]),
+        2 * len(solutions["u"]["forward"][0]),
+    )
+    print(vmax, vmin)
+    vmax = -12
+    vmin = -70
+    fig, axs, tcs = plot_indicator_snapshots2(
+        indicators,
+        time_partition,
+        levels=np.linspace(vmin, vmax, 100),
+        vmax=vmax,
+        vmin=vmin,
+        cmap="viridis",
+        figsize=figsize,
+    )
+    cbar = fig.colorbar(tcs[1][-3], ax=axs, location="top")
+    # print(np.exp(-24.6), np.exp(-14))
+    fig.savefig("fig1_dwr.jpg")
+    # smoothing of monitor function:
+    gamma = 2  # Refinement level
+    eta_b = 5e-8
+    funcs = []
+    P0 = indicators[i][0].function_space()
+    for i, mesh_i in enumerate(indicators):
+        #     area = areas[i]
+
+        max_errs = np.zeros(indicators[i][0].dat.data.shape)
+        fns = []
+        for j, e_t in enumerate(indicators[i]):
+            val = np.array(e_t.dat.data)
+            fn = Function(P0, val=val)
+            fns.append(fn)
+        funcs.append(fns)
+    # print(len(funcs))
+    # print(len(funcs[1]))
+    fig, axs, tcs = plot_indicator_snapshots(
+        funcs, time_partition, cmap="viridis", figsize=figsize
+    )
+    # cbar = fig.colorbar(tcs[-1][-1], ax=axs, location='top')
+    # plt.suptitle("Monitor function")
+    for i in range(axs.shape[1]):
+        for j in range(axs.shape[0]):
+            fig.colorbar(tcs[i][j], ax=axs[j, i])
+    fig.savefig("fig2_unsmooth.jpg")
+    smoothed_fns = []
+    P = mesh_seq.time_partition
+    N = 40  # Constant from paper, but see the later comment
+    for i in range(len(funcs)):
+        fns = []
+        function_space = funcs[i][0].function_space()
+        dt = P.timesteps[i]
+        delX = Constant(1 / (2 * n))
+        K = Constant(N * delX**2 / dt)
+        t_start, t_end = P.subintervals[i]
+        t = t_start
+        f_bound = Function(function_space)
+        f_smooth = Function(function_space)
+        v = TestFunction(f_bound.function_space())
+        F = (
+            inner(f_smooth - f_bound / dt, v)
+            - K * (inner(dot(nabla_grad(f_smooth), nabla_grad(f_smooth)), v))
+        ) * dx
+        for j in range(len(funcs[i])):
+            # this should be the same as while t < t_end - 1e-5:
+            f_bound.assign(funcs[i][j])
+            solve(F == 0, f_smooth)
+            fns.append(Function(function_space, val=f_smooth.dat.data))
+            t += dt
+
+        smoothed_fns.append(fns)
+
+    print(len(smoothed_fns), len(smoothed_fns[0]), type(smoothed_fns[0][0]))
+    print(np.min(smoothed_fns[-1][-1].dat.data), np.max(smoothed_fns[-1][-1].dat.data))
+    fig, axs, tcs = plot_indicator_snapshots(
+        smoothed_fns, time_partition, cmap="viridis", figsize=figsize
+    )
+    for i in range(axs.shape[1]):
+        for j in range(axs.shape[0]):
+            fig.colorbar(tcs[i][j], ax=axs[j, i])
+    fig.savefig("fig3_smooth.jpg")
 
 
 if __name__ == "__main__":
