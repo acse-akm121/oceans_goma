@@ -150,21 +150,21 @@ def main():
         2 * len(solutions["u"]["forward"][0]),
         2 * len(solutions["u"]["forward"][0]),
     )
-    print(vmax, vmin)
-    vmax = -12
-    vmin = -70
-    fig, axs, tcs = plot_indicator_snapshots2(
-        indicators,
-        time_partition,
-        levels=np.linspace(vmin, vmax, 100),
-        vmax=vmax,
-        vmin=vmin,
-        cmap="viridis",
-        figsize=figsize,
-    )
-    cbar = fig.colorbar(tcs[1][-3], ax=axs, location="top")
+    # print(vmax, vmin)
+    # vmax = -12
+    # vmin = -70
+    # fig, axs, tcs = plot_indicator_snapshots2(
+    #     indicators,
+    #     time_partition,
+    #     levels=np.linspace(vmin, vmax, 100),
+    #     vmax=vmax,
+    #     vmin=vmin,
+    #     cmap="viridis",
+    #     figsize=figsize,
+    # )
+    # cbar = fig.colorbar(tcs[1][-3], ax=axs, location="top")
     # print(np.exp(-24.6), np.exp(-14))
-    fig.savefig("fig1_dwr.jpg")
+    # fig.savefig("fig1_dwr.jpg")
     # smoothing of monitor function:
     gamma = 2  # Refinement level
     eta_b = 5e-8
@@ -182,56 +182,65 @@ def main():
         funcs.append(fns)
     # print(len(funcs))
     # print(len(funcs[1]))
-    fig, axs, tcs = plot_indicator_snapshots(
-        funcs, time_partition, cmap="viridis", figsize=figsize
-    )
+    # fig, axs, tcs = plot_indicator_snapshots(
+    #     funcs, time_partition, cmap="viridis", figsize=figsize
+    # )
     # cbar = fig.colorbar(tcs[-1][-1], ax=axs, location='top')
     # plt.suptitle("Monitor function")
-    for i in range(axs.shape[1]):
-        for j in range(axs.shape[0]):
-            fig.colorbar(tcs[i][j], ax=axs[j, i])
-    plt.suptitle("Unsmoothed Monitor Function")
-    fig.savefig("fig2_unsmooth.jpg")
-    smoothed_fns = []
+    # for i in range(axs.shape[1]):
+    #     for j in range(axs.shape[0]):
+    #         fig.colorbar(tcs[i][j], ax=axs[j, i])
+    # plt.suptitle("Unsmoothed Monitor Function")
+    # fig.savefig("fig2_unsmooth.jpg")
+
     P = mesh_seq.time_partition
     N = 40  # Constant from paper, but see the later comment
-    num_smooth = 4
-    for i in range(len(funcs)):
-        fns = []
-        function_space = funcs[i][0].function_space()
-        dt = P.timesteps[i]
-        delX = Constant(1 / (2 * n))
-        K = Constant(N * delX**2 / dt)
-        t_start, t_end = P.subintervals[i]
-        t = t_start
-        f_bound = Function(function_space)
-        f_smooth = Function(function_space)
-        v = TestFunction(f_bound.function_space())
-        F = (
-            inner(f_smooth - f_bound / dt, v)
-            - K * (inner(dot(nabla_grad(f_smooth), nabla_grad(f_smooth)), v))
-        ) * dx
-        for j in range(len(funcs[i])):
-            # this should be the same as while t < t_end - 1e-5:
-            f_bound.assign(funcs[i][j])
-            for k in range(num_smooth):
-                # Potentially have a k-loop here and smooth N times?
-                solve(F == 0, f_smooth)
+    for num_smooth in range(1, 16):
+        smoothed_fns = []
+        # num_smooth = 16
+        print("Starting smoothing #{}".format(num_smooth))
+        print(type(CellSize(mesh_seq[i])))
+        for i in range(len(funcs)):
+            fns = []
+            function_space = funcs[i][0].function_space()
+            dt = P.timesteps[i]
+            delX = Constant(1 / (2 * n))
+            K = Constant(N * delX**2 / dt)
+            t_start, t_end = P.subintervals[i]
+            t = t_start
+            f_bound = Function(function_space)
+            f_smooth = Function(function_space)
+            v = TestFunction(f_bound.function_space())
+            F = (
+                inner(f_smooth - f_bound / dt, v)
+                - K * (inner(dot(nabla_grad(f_smooth), nabla_grad(f_smooth)), v))
+            ) * dx
+            for j in range(len(funcs[i])):
+                # this should be the same as while t < t_end - 1e-5:
+                f_bound.assign(funcs[i][j])
+                for k in range(num_smooth):
+                    # Potentially have a k-loop here and smooth N times?
+                    # print(k)
+                    solve(F == 0, f_smooth)
+                    f_bound.assign(f_smooth)
                 t += dt
-                f_bound.assign(f_smooth)
-            fns.append(Function(function_space, val=f_smooth.dat.data))
-        smoothed_fns.append(fns)
+                fns.append(Function(function_space, val=f_smooth.dat.data))
+            smoothed_fns.append(fns)
 
-    print(len(smoothed_fns), len(smoothed_fns[0]), type(smoothed_fns[0][0]))
-    print(np.min(smoothed_fns[-1][-1].dat.data), np.max(smoothed_fns[-1][-1].dat.data))
-    fig, axs, tcs = plot_indicator_snapshots(
-        smoothed_fns, time_partition, cmap="viridis", figsize=figsize
-    )
-    for i in range(axs.shape[1]):
-        for j in range(axs.shape[0]):
-            fig.colorbar(tcs[i][j], ax=axs[j, i])
-    plt.suptitle("Smoothed Monitor Function")
-    fig.savefig("fig3_smooth.jpg")
+        # print(len(smoothed_fns), len(smoothed_fns[0]), type(smoothed_fns[0][0]))
+        print(
+            np.min(smoothed_fns[-1][-1].dat.data), np.max(smoothed_fns[-1][-1].dat.data)
+        )
+
+        fig, axs, tcs = plot_indicator_snapshots(
+            smoothed_fns, time_partition, cmap="viridis", figsize=figsize
+        )
+        for i in range(axs.shape[1]):
+            for j in range(axs.shape[0]):
+                fig.colorbar(tcs[i][j], ax=axs[j, i])
+        plt.suptitle("Smoothed Monitor Function ({})".format(num_smooth))
+        fig.savefig("fig3_smooth_{}.jpg".format(num_smooth))
+        print("Wrote to: {}".format("fig3_smooth_{}.jpg".format(num_smooth)))
 
 
 if __name__ == "__main__":
