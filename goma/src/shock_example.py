@@ -265,9 +265,7 @@ def main():
         if time_partition is not None:
             time = 2 * i * dt
             axs[row, col].set_title(
-                "t={:.3f}, Aspect Ration Min/Max:{:.3f}{:.3f}".format(
-                    time, min_ar, max_ar
-                )
+                "t={:.3f} AR Min:{:.3f}/Max:{:.3f}".format(time, min_ar, max_ar)
             )
     tps.append(tp)
     fig.tight_layout(pad=0.5)
