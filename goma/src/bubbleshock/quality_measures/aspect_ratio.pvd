@@ -1,0 +1,15 @@
+<?xml version="1.0" ?>
+<VTKFile type="Collection" version="0.1" byte_order="LittleEndian">
+<Collection>
+<DataSet timestep="0" file="aspect_ratio_0.vtu" />
+<DataSet timestep="1" file="aspect_ratio_1.vtu" />
+<DataSet timestep="2" file="aspect_ratio_2.vtu" />
+<DataSet timestep="3" file="aspect_ratio_3.vtu" />
+<DataSet timestep="4" file="aspect_ratio_4.vtu" />
+<DataSet timestep="5" file="aspect_ratio_5.vtu" />
+<DataSet timestep="6" file="aspect_ratio_6.vtu" />
+<DataSet timestep="7" file="aspect_ratio_7.vtu" />
+<DataSet timestep="8" file="aspect_ratio_8.vtu" />
+<DataSet timestep="9" file="aspect_ratio_9.vtu" />
+</Collection>
+</VTKFile>

@@ -1,0 +1,15 @@
+<?xml version="1.0" ?>
+<VTKFile type="Collection" version="0.1" byte_order="LittleEndian">
+<Collection>
+<DataSet timestep="0" file="skewness_0.vtu" />
+<DataSet timestep="1" file="skewness_1.vtu" />
+<DataSet timestep="2" file="skewness_2.vtu" />
+<DataSet timestep="3" file="skewness_3.vtu" />
+<DataSet timestep="4" file="skewness_4.vtu" />
+<DataSet timestep="5" file="skewness_5.vtu" />
+<DataSet timestep="6" file="skewness_6.vtu" />
+<DataSet timestep="7" file="skewness_7.vtu" />
+<DataSet timestep="8" file="skewness_8.vtu" />
+<DataSet timestep="9" file="skewness_9.vtu" />
+</Collection>
+</VTKFile>
