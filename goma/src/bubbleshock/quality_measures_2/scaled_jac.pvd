@@ -1,0 +1,15 @@
+<?xml version="1.0" ?>
+<VTKFile type="Collection" version="0.1" byte_order="LittleEndian">
+<Collection>
+<DataSet timestep="0" file="scaled_jac_0.vtu" />
+<DataSet timestep="1" file="scaled_jac_1.vtu" />
+<DataSet timestep="2" file="scaled_jac_2.vtu" />
+<DataSet timestep="3" file="scaled_jac_3.vtu" />
+<DataSet timestep="4" file="scaled_jac_4.vtu" />
+<DataSet timestep="5" file="scaled_jac_5.vtu" />
+<DataSet timestep="6" file="scaled_jac_6.vtu" />
+<DataSet timestep="7" file="scaled_jac_7.vtu" />
+<DataSet timestep="8" file="scaled_jac_8.vtu" />
+<DataSet timestep="9" file="scaled_jac_9.vtu" />
+</Collection>
+</VTKFile>
