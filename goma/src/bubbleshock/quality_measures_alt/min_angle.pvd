@@ -1,0 +1,15 @@
+<?xml version="1.0" ?>
+<VTKFile type="Collection" version="0.1" byte_order="LittleEndian">
+<Collection>
+<DataSet timestep="0" file="min_angle_0.vtu" />
+<DataSet timestep="1" file="min_angle_1.vtu" />
+<DataSet timestep="2" file="min_angle_2.vtu" />
+<DataSet timestep="3" file="min_angle_3.vtu" />
+<DataSet timestep="4" file="min_angle_4.vtu" />
+<DataSet timestep="5" file="min_angle_5.vtu" />
+<DataSet timestep="6" file="min_angle_6.vtu" />
+<DataSet timestep="7" file="min_angle_7.vtu" />
+<DataSet timestep="8" file="min_angle_8.vtu" />
+<DataSet timestep="9" file="min_angle_9.vtu" />
+</Collection>
+</VTKFile>
